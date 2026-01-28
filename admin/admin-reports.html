@@ -1,0 +1,2264 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Reports - Cherry Tree Centre</title>
+  
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f6fa;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    /* Fixed Header */
+    .admin-header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: white;
+      padding: 10px 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    
+    .header-left h1 {
+      font-size: 16px;
+      font-weight: 500;
+    }
+    
+    .back-link {
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      font-size: 12px;
+    }
+    
+    .back-link:hover {
+      color: white;
+    }
+    
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    /* Date Controls - Compact */
+    .date-controls {
+      background: white;
+      border-radius: 8px;
+      padding: 10px 15px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+      flex-shrink: 0;
+    }
+    
+    .controls-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    
+    .date-controls label {
+      font-weight: 600;
+      color: #333;
+      font-size: 12px;
+    }
+    
+    .date-controls input[type="date"] {
+      padding: 5px 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    
+    .quick-select {
+      display: flex;
+      gap: 6px;
+    }
+    
+    .quick-btn {
+      padding: 5px 12px;
+      border: 1px solid #ddd;
+      background: white;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+      transition: all 0.2s;
+    }
+    
+    .quick-btn:hover {
+      background: #f0f0f0;
+    }
+    
+    .quick-btn.active {
+      background: #1a1a2e;
+      color: white;
+      border-color: #1a1a2e;
+    }
+    
+    .refresh-btn {
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 5px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+      margin-left: auto;
+    }
+    
+    .refresh-btn:hover {
+      background: #218838;
+    }
+    
+    /* Navigation Row - Compact */
+    .navigation-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #eee;
+    }
+    
+    .nav-btn {
+      background: #f0f0f0;
+      border: 1px solid #ddd;
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      min-width: 100px;
+      justify-content: center;
+    }
+    
+    .nav-btn:hover {
+      background: #e0e0e0;
+    }
+    
+    .period-display {
+      min-width: 180px;
+      text-align: center;
+    }
+    
+    .period-label {
+      font-size: 9px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .period-value {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1a1a2e;
+    }
+    
+    .period-dates {
+      font-size: 10px;
+      color: #888;
+    }
+    
+    .today-btn {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 10px;
+      margin-left: 6px;
+    }
+    
+    .today-btn:hover {
+      background: #0056b3;
+    }
+    
+    /* Compact Summary Strip */
+    .summary-strip {
+      display: flex;
+      gap: 15px;
+      background: white;
+      border-radius: 8px;
+      padding: 10px 20px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+      flex-shrink: 0;
+      align-items: center;
+    }
+    
+    .summary-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .summary-item .number {
+      font-size: 20px;
+      font-weight: bold;
+      color: #1a1a2e;
+    }
+    
+    .summary-item .label {
+      font-size: 10px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    
+    .summary-divider {
+      width: 1px;
+      height: 30px;
+      background: #e0e0e0;
+    }
+    
+    /* Charts Grid */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      flex: 1;
+      min-height: 0;
+    }
+    
+    /* Section Container */
+    .section-container {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .section-header {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1a1a2e;
+      padding: 10px 12px;
+      border-bottom: 1px solid #eee;
+      background: #fafafa;
+      flex-shrink: 0;
+    }
+    
+    .section-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    /* Bar Chart Container */
+    .bar-chart-container {
+      flex: 1;
+      min-height: 200px;
+      position: relative;
+    }
+    
+    /* Heat Map Styles */
+    .heatmap-container {
+      flex: 1;
+      overflow: auto;
+    }
+    
+    .heatmap-grid {
+      display: inline-block;
+      min-width: 100%;
+    }
+    
+    .heatmap-header-row {
+      display: flex;
+      margin-left: 50px;
+      margin-bottom: 3px;
+    }
+    
+    .heatmap-header-cell {
+      width: 42px;
+      text-align: center;
+      font-size: 10px;
+      font-weight: 600;
+      color: #666;
+    }
+    
+    .heatmap-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 2px;
+    }
+    
+    .heatmap-time {
+      width: 46px;
+      font-size: 10px;
+      color: #666;
+      text-align: right;
+      padding-right: 4px;
+    }
+    
+    .heatmap-cell {
+      width: 40px;
+      height: 24px;
+      margin: 0 1px;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      font-weight: 500;
+      transition: transform 0.1s;
+    }
+    
+    .heatmap-cell:hover {
+      transform: scale(1.1);
+      z-index: 1;
+    }
+    
+    /* Heat map totals row */
+    .heatmap-totals-row {
+      display: flex;
+      align-items: center;
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 2px solid #e0e0e0;
+    }
+    
+    .heatmap-totals-label {
+      width: 46px;
+      font-size: 9px;
+      color: #333;
+      text-align: right;
+      padding-right: 4px;
+      font-weight: 600;
+    }
+    
+    .heatmap-total-cell {
+      width: 40px;
+      height: 28px;
+      margin: 0 1px;
+      border-radius: 3px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 600;
+    }
+    
+    .heatmap-total-cell .util-percent {
+      font-size: 9px;
+      opacity: 0.9;
+    }
+    
+    /* Heat map legend */
+    .heatmap-legend {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 10px;
+      justify-content: center;
+      font-size: 10px;
+      color: #666;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .legend-box {
+      width: 14px;
+      height: 14px;
+      border-radius: 2px;
+    }
+    
+    /* Daily Breakdown Table */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+    
+    .data-table th,
+    .data-table td {
+      padding: 6px 8px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .data-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+      color: #333;
+      position: sticky;
+      top: 0;
+    }
+    
+    .data-table tr:hover {
+      background: #f8f9fa;
+    }
+    
+    .data-table .number-col {
+      text-align: right;
+      font-family: 'Courier New', monospace;
+    }
+    
+    /* Utilisation colours */
+    .util-good { color: #28a745; }
+    .util-okay { color: #ffc107; }
+    .util-poor { color: #fd7e14; }
+    .util-bad { color: #dc3545; }
+    
+    .bg-good { background: #28a745; color: white; }
+    .bg-okay { background: #ffc107; color: #333; }
+    .bg-poor { background: #fd7e14; color: white; }
+    .bg-bad { background: #dc3545; color: white; }
+    
+    /* Loading State */
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+      font-size: 12px;
+    }
+    
+    /* Counsellor Day View */
+    .counsellor-summary {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 10px;
+      background: #f8f9fa;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+    
+    .counsellor-summary .stat {
+      text-align: center;
+    }
+    
+    .counsellor-summary .stat-num {
+      font-size: 18px;
+      font-weight: bold;
+      color: #1a1a2e;
+    }
+    
+    .counsellor-summary .stat-label {
+      font-size: 8px;
+      color: #666;
+      text-transform: uppercase;
+    }
+    
+    .counsellor-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .counsellor-card {
+      display: flex;
+      align-items: center;
+      padding: 5px 8px;
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      gap: 8px;
+    }
+    
+    .counsellor-card:hover {
+      border-color: #1a1a2e;
+    }
+    
+    .counsellor-avatar {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 9px;
+      flex-shrink: 0;
+    }
+    
+    .counsellor-name {
+      font-weight: 500;
+      font-size: 11px;
+      color: #1a1a2e;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 110px;
+      flex-shrink: 0;
+    }
+    
+    .counsellor-time-bar {
+      display: flex;
+      gap: 2px;
+      flex: 1;
+    }
+    
+    .time-slot {
+      flex: 1;
+      height: 18px;
+      border-radius: 2px;
+      background: #e8e8e8;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .time-slot.has-conflict {
+      box-shadow: 0 0 0 1px #dc3545;
+    }
+    
+    .time-slot-segment {
+      flex: 1;
+      min-height: 6px;
+    }
+    
+    .counsellor-stats {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    
+    .counsellor-stat {
+      text-align: center;
+      min-width: 28px;
+    }
+    
+    .counsellor-stat-value {
+      font-size: 12px;
+      font-weight: 600;
+      color: #1a1a2e;
+    }
+    
+    .counsellor-stat-label {
+      font-size: 7px;
+      color: #888;
+      text-transform: uppercase;
+    }
+    
+    .no-counsellors {
+      text-align: center;
+      padding: 20px;
+      color: #888;
+      font-size: 12px;
+    }
+    
+    .no-counsellors-icon {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+    
+    /* Dynamic room colours */
+    #dynamicStyles {}
+    
+    /* ================================ */
+    /* MOBILE STYLES                    */
+    /* ================================ */
+    @media (max-width: 768px) {
+      html, body {
+        height: auto;
+        overflow: auto;
+      }
+      
+      .admin-header {
+        padding: 8px 12px;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      
+      .header-left {
+        gap: 10px;
+      }
+      
+      .header-left h1 {
+        font-size: 14px;
+      }
+      
+      .back-link {
+        font-size: 11px;
+      }
+      
+      .main-content {
+        padding: 8px;
+        gap: 8px;
+      }
+      
+      /* Date Controls */
+      .date-controls {
+        padding: 8px 10px;
+      }
+      
+      .controls-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+      }
+      
+      .quick-select {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px;
+      }
+      
+      .quick-btn {
+        padding: 8px 4px;
+        font-size: 11px;
+      }
+      
+      .refresh-btn {
+        width: 100%;
+        padding: 8px;
+        margin-left: 0;
+      }
+      
+      #customDateRange {
+        flex-direction: column !important;
+        gap: 6px !important;
+      }
+      
+      #customDateRange input[type="date"] {
+        width: 100%;
+      }
+      
+      /* Navigation */
+      .navigation-row {
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: center;
+      }
+      
+      .nav-btn {
+        min-width: 80px;
+        padding: 6px 8px;
+        font-size: 10px;
+      }
+      
+      .period-display {
+        min-width: 100%;
+        order: -1;
+        margin-bottom: 4px;
+      }
+      
+      .period-value {
+        font-size: 14px;
+      }
+      
+      .today-btn {
+        padding: 6px 12px;
+      }
+      
+      /* Summary Strip */
+      .summary-strip {
+        padding: 8px 12px;
+        gap: 8px;
+        justify-content: space-around;
+      }
+      
+      .summary-item .number {
+        font-size: 16px;
+      }
+      
+      .summary-item .label {
+        font-size: 8px;
+      }
+      
+      .summary-divider {
+        height: 24px;
+      }
+      
+      /* Charts Grid - Stack vertically */
+      .charts-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      
+      .section-container {
+        min-height: 250px;
+      }
+      
+      .section-header {
+        font-size: 12px;
+        padding: 8px 10px;
+      }
+      
+      .section-body {
+        padding: 8px;
+      }
+      
+      /* Bar Chart */
+      .bar-chart-container {
+        min-height: 250px;
+      }
+      
+      /* Heat Map */
+      .heatmap-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      .heatmap-header-cell {
+        width: 36px;
+        font-size: 9px;
+      }
+      
+      .heatmap-cell {
+        width: 34px;
+        height: 20px;
+        font-size: 8px;
+      }
+      
+      .heatmap-time {
+        font-size: 9px;
+        width: 40px;
+      }
+      
+      .heatmap-total-cell {
+        width: 34px;
+        height: 24px;
+        font-size: 9px;
+      }
+      
+      .heatmap-legend {
+        flex-wrap: wrap;
+        gap: 8px;
+        font-size: 9px;
+      }
+      
+      .legend-box {
+        width: 12px;
+        height: 12px;
+      }
+      
+      /* Counsellor Cards */
+      .counsellor-summary {
+        justify-content: space-around;
+        padding: 6px 8px;
+      }
+      
+      .counsellor-summary .stat-num {
+        font-size: 16px;
+      }
+      
+      .counsellor-card {
+        flex-wrap: wrap;
+        padding: 6px;
+        gap: 6px;
+      }
+      
+      .counsellor-avatar {
+        width: 24px;
+        height: 24px;
+        font-size: 8px;
+      }
+      
+      .counsellor-name {
+        width: auto;
+        flex: 1;
+        font-size: 11px;
+        min-width: 80px;
+      }
+      
+      .counsellor-time-bar {
+        order: 3;
+        width: 100%;
+        gap: 1px;
+      }
+      
+      .time-slot {
+        height: 14px;
+      }
+      
+      .time-slot-segment {
+        min-height: 4px;
+      }
+      
+      .counsellor-stats {
+        gap: 8px;
+      }
+      
+      .counsellor-stat {
+        min-width: 24px;
+      }
+      
+      .counsellor-stat-value {
+        font-size: 11px;
+      }
+      
+      /* Daily Table */
+      .data-table {
+        font-size: 10px;
+      }
+      
+      .data-table th,
+      .data-table td {
+        padding: 5px 4px;
+      }
+    }
+    
+    /* Extra small screens */
+    @media (max-width: 480px) {
+      .summary-strip {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 12px;
+      }
+      
+      .summary-divider {
+        display: none;
+      }
+      
+      .summary-item {
+        min-width: 60px;
+      }
+      
+      .nav-btn span {
+        display: none;
+      }
+      
+      .nav-btn::before {
+        content: '←';
+      }
+      
+      #nextBtn::before {
+        content: '';
+      }
+      
+      #nextBtn::after {
+        content: '→';
+      }
+    }
+    
+    /* ================================
+       MOBILE RESPONSIVE STYLES
+       ================================ */
+    @media (max-width: 768px) {
+      /* Header */
+      .admin-header {
+        padding: 8px 12px;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      
+      .header-left {
+        gap: 10px;
+      }
+      
+      .header-left h1 {
+        font-size: 14px;
+      }
+      
+      .back-link {
+        font-size: 11px;
+      }
+      
+      /* Main content */
+      .main-content {
+        padding: 8px 10px;
+        gap: 8px;
+      }
+      
+      /* Date controls */
+      .date-controls {
+        padding: 8px 10px;
+      }
+      
+      .controls-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+      }
+      
+      .controls-row label {
+        display: none;
+      }
+      
+      .quick-select {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px;
+      }
+      
+      .quick-btn {
+        padding: 8px 4px;
+        font-size: 11px;
+      }
+      
+      .refresh-btn {
+        width: 100%;
+        padding: 8px;
+        margin-left: 0;
+      }
+      
+      #customDateRange {
+        flex-direction: column !important;
+        gap: 6px !important;
+      }
+      
+      #customDateRange input {
+        width: 100%;
+      }
+      
+      /* Navigation row */
+      .navigation-row {
+        flex-wrap: wrap;
+        gap: 6px;
+        padding-top: 6px;
+        margin-top: 6px;
+      }
+      
+      .nav-btn {
+        min-width: 80px;
+        padding: 6px 8px;
+        font-size: 10px;
+      }
+      
+      .period-display {
+        min-width: 100%;
+        order: -1;
+        margin-bottom: 4px;
+      }
+      
+      .period-value {
+        font-size: 14px;
+      }
+      
+      .period-dates {
+        font-size: 11px;
+      }
+      
+      .today-btn {
+        position: absolute;
+        right: 10px;
+        top: 8px;
+      }
+      
+      /* Summary strip */
+      .summary-strip {
+        padding: 8px 12px;
+        justify-content: space-around;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      
+      .summary-item .number {
+        font-size: 16px;
+      }
+      
+      .summary-item .label {
+        font-size: 8px;
+      }
+      
+      .summary-divider {
+        display: none;
+      }
+      
+      /* Charts grid - stack vertically */
+      .charts-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      
+      .section-container {
+        min-height: auto;
+      }
+      
+      .section-header {
+        font-size: 12px;
+        padding: 8px 10px;
+      }
+      
+      .section-body {
+        padding: 8px;
+      }
+      
+      /* Bar chart */
+      .bar-chart-container {
+        min-height: 180px;
+      }
+      
+      /* Counsellor day view */
+      .counsellor-summary {
+        padding: 6px 8px;
+        gap: 8px;
+        justify-content: space-around;
+      }
+      
+      .counsellor-summary .stat-num {
+        font-size: 16px;
+      }
+      
+      .counsellor-card {
+        flex-wrap: wrap;
+        padding: 6px;
+        gap: 6px;
+      }
+      
+      .counsellor-avatar {
+        width: 24px;
+        height: 24px;
+        font-size: 8px;
+      }
+      
+      .counsellor-name {
+        width: auto;
+        flex: 1;
+        font-size: 11px;
+      }
+      
+      .counsellor-stats {
+        order: 1;
+      }
+      
+      .counsellor-time-bar {
+        width: 100%;
+        order: 2;
+        gap: 1px;
+      }
+      
+      .time-slot {
+        height: 14px;
+      }
+      
+      .time-slot-segment {
+        min-height: 4px;
+      }
+      
+      .counsellor-stat {
+        min-width: 24px;
+      }
+      
+      .counsellor-stat-value {
+        font-size: 11px;
+      }
+      
+      /* Heat map */
+      .heatmap-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      .heatmap-grid {
+        min-width: 320px;
+      }
+      
+      .heatmap-header-cell {
+        width: 36px;
+        font-size: 9px;
+      }
+      
+      .heatmap-time {
+        width: 38px;
+        font-size: 9px;
+      }
+      
+      .heatmap-cell {
+        width: 34px;
+        height: 20px;
+        font-size: 8px;
+      }
+      
+      .heatmap-total-cell {
+        width: 34px;
+        height: 24px;
+        font-size: 9px;
+      }
+      
+      .heatmap-legend {
+        flex-wrap: wrap;
+        gap: 8px;
+        font-size: 9px;
+      }
+      
+      .legend-box {
+        width: 12px;
+        height: 12px;
+      }
+      
+      /* Daily table */
+      .data-table {
+        font-size: 10px;
+      }
+      
+      .data-table th,
+      .data-table td {
+        padding: 5px 4px;
+      }
+    }
+    
+    /* Extra small screens */
+    @media (max-width: 480px) {
+      .admin-header h1 {
+        font-size: 12px;
+      }
+      
+      .summary-item .number {
+        font-size: 14px;
+      }
+      
+      .counsellor-name {
+        font-size: 10px;
+      }
+      
+      .nav-btn {
+        min-width: 70px;
+        font-size: 9px;
+      }
+    }
+  </style>
+  <style id="dynamicStyles"></style>
+</head>
+<body>
+  <header class="admin-header">
+    <div class="header-left">
+      <a href="admin-index.html" class="back-link">← Admin Portal</a>
+      <h1>📊 Reports & Analytics</h1>
+    </div>
+  </header>
+  
+  <main class="main-content">
+    <!-- Date Controls -->
+    <div class="date-controls">
+      <div class="controls-row">
+        <label>View:</label>
+        <div class="quick-select">
+          <button class="quick-btn active" onclick="setQuickRange('day')">Day</button>
+          <button class="quick-btn" onclick="setQuickRange('week')">Week</button>
+          <button class="quick-btn" onclick="setQuickRange('month')">Month</button>
+          <button class="quick-btn" onclick="setQuickRange('custom')">Custom</button>
+        </div>
+        
+        <div id="customDateRange" style="display: none; gap: 8px; align-items: center;">
+          <label>From:</label>
+          <input type="date" id="startDate">
+          <label>To:</label>
+          <input type="date" id="endDate">
+          <button class="quick-btn" onclick="applyCustomRange()">Apply</button>
+        </div>
+        
+        <button class="refresh-btn" onclick="loadReports()">🔄 Refresh</button>
+      </div>
+      
+      <!-- Navigation Row -->
+      <div class="navigation-row" id="navigationRow">
+        <button class="nav-btn" id="prevBtn" onclick="navigatePeriod(-1)">
+          ← <span id="prevLabel">Previous</span>
+        </button>
+        
+        <div class="period-display">
+          <div class="period-label" id="periodLabel">Day</div>
+          <div class="period-value" id="periodValue">Today</div>
+          <div class="period-dates" id="periodDates"></div>
+        </div>
+        
+        <button class="nav-btn" id="nextBtn" onclick="navigatePeriod(1)">
+          <span id="nextLabel">Next</span> →
+        </button>
+        
+        <button class="today-btn" id="todayBtn" onclick="goToToday()">Today</button>
+      </div>
+    </div>
+    
+    <!-- Compact Summary Strip -->
+    <div class="summary-strip">
+      <div class="summary-item">
+        <div class="number" id="totalBookings">0</div>
+        <div class="label">Bookings</div>
+      </div>
+      <div class="summary-divider"></div>
+      <div class="summary-item">
+        <div class="number" id="totalHours">0</div>
+        <div class="label">Hours</div>
+      </div>
+      <div class="summary-divider"></div>
+      <div class="summary-item">
+        <div class="number" id="avgUtilisation">0%</div>
+        <div class="label">Utilisation</div>
+      </div>
+      <div class="summary-divider"></div>
+      <div class="summary-item">
+        <div class="number" id="uniqueCounsellors">0</div>
+        <div class="label">Counsellors</div>
+      </div>
+    </div>
+    
+    <!-- Charts Grid -->
+    <div class="charts-grid">
+      <!-- Room Bar Chart -->
+      <div class="section-container">
+        <div class="section-header">📊 Room Utilisation</div>
+        <div class="section-body">
+          <div class="bar-chart-container">
+            <canvas id="roomBarChart"></canvas>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Heat Map (Week view) / Daily Breakdown (Day/Month view) -->
+      <div class="section-container">
+        <div class="section-header" id="rightPanelHeader">📅 Daily Breakdown</div>
+        <div class="section-body" id="rightPanelBody">
+          <!-- Content switches based on view -->
+          <div id="dailyTableContainer">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Day</th>
+                  <th class="number-col">Bookings</th>
+                  <th class="number-col">Hours</th>
+                  <th class="number-col">Util %</th>
+                </tr>
+              </thead>
+              <tbody id="dailyTableBody">
+                <tr><td colspan="5" class="loading">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div id="counsellorDayContainer" style="display: none;">
+            <div id="counsellorDayContent"></div>
+          </div>
+          
+          <div id="heatmapContainer" style="display: none;">
+            <div class="heatmap-container">
+              <div class="heatmap-grid" id="heatmapGrid"></div>
+            </div>
+            <div class="heatmap-legend">
+              <span>Rooms booked:</span>
+              <div class="legend-item"><div class="legend-box" style="background: #f5f5f5; border: 1px solid #ddd;"></div> 0</div>
+              <div class="legend-item"><div class="legend-box" style="background: #c8e6c9;"></div> 1-2</div>
+              <div class="legend-item"><div class="legend-box" style="background: #81c784;"></div> 3-4</div>
+              <div class="legend-item"><div class="legend-box" style="background: #4caf50;"></div> 5-6</div>
+              <div class="legend-item"><div class="legend-box" style="background: #2e7d32;"></div> 7+</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  
+  <script>
+    // ================================
+    // CONFIGURATION
+    // ================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyCVp4QDAnh5RcxGZIrEY2LriUWKQNcNbzE",
+      authDomain: "cherry-tree-bookings.firebaseapp.com",
+      databaseURL: "https://cherry-tree-bookings-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "cherry-tree-bookings",
+      storageBucket: "cherry-tree-bookings.firebasestorage.app",
+      messagingSenderId: "280166213685",
+      appId: "1:280166213685:web:f80b11799f41f5f385297c"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    
+    // Constants
+    const HOURS_PER_DAY = 13; // 8am to 9pm
+    const BUSINESS_HOURS = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'];
+    
+    // Default room configuration
+    const defaultRoomConfig = {
+      'Room_1': { enabled: true, color: '#d4a5a5', borderColor: '#b89090', displayName: 'Room 1', order: 1 },
+      'Room_2': { enabled: true, color: '#b299d4', borderColor: '#9680c0', displayName: 'Room 2', order: 2 },
+      'Room_4': { enabled: true, color: '#a5d4a5', borderColor: '#90b890', displayName: 'Room 4', order: 3 },
+      'Room_5': { enabled: true, color: '#e57373', borderColor: '#d32f2f', displayName: 'Room 5', order: 4 },
+      'Room_6': { enabled: true, color: '#c8a882', borderColor: '#b5946e', displayName: 'Room 6', order: 5 },
+      'Room_7': { enabled: true, color: '#e6d45a', borderColor: '#d4c347', displayName: 'Room 7', order: 6 },
+      'Room_8': { enabled: true, color: '#80cbc4', borderColor: '#4db6ac', displayName: 'Room 8', order: 7 },
+      'Room_9': { enabled: true, color: '#ce93d8', borderColor: '#ba68c8', displayName: 'Room 9', order: 8 },
+      'Online': { enabled: true, color: '#7dd87d', borderColor: '#6bc46b', displayName: 'Online', order: 10 },
+      'Car_Park': { enabled: true, color: '#bdbdbd', borderColor: '#9e9e9e', displayName: 'Car Park', order: 9 }
+    };
+    
+    const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 
+                         'July', 'August', 'September', 'October', 'November', 'December'];
+    const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const DAY_NAMES_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    
+    // State
+    let bookingData = [];
+    let roomConfig = {};
+    let enabledRooms = [];
+    let currentRange = 'day';
+    let currentDate = new Date();
+    let startDate = new Date();
+    let endDate = new Date();
+    let barChart = null;
+    
+    // ================================
+    // INITIALIZATION
+    // ================================
+    document.addEventListener('DOMContentLoaded', async () => {
+      sessionStorage.setItem('adminAuth', 'true');
+      
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('startDate').value = today;
+      document.getElementById('endDate').value = today;
+      
+      currentDate = new Date();
+      currentDate.setHours(12, 0, 0, 0);
+      
+      await loadRoomConfig();
+      updateNavigationDisplay();
+      loadReports();
+    });
+    
+    // ================================
+    // ROOM CONFIGURATION
+    // ================================
+    async function loadRoomConfig() {
+      try {
+        const snapshot = await database.ref('room_config').once('value');
+        const config = snapshot.val();
+        
+        if (config && Object.keys(config).length > 0) {
+          roomConfig = config;
+        } else {
+          roomConfig = defaultRoomConfig;
+        }
+        
+        enabledRooms = Object.entries(roomConfig)
+          .filter(([key, room]) => room.enabled)
+          .map(([key, room]) => ({
+            id: key.toLowerCase().replace('_', '-'),
+            key: key,
+            name: room.displayName || key.replace('_', ' '),
+            color: room.color,
+            borderColor: room.borderColor,
+            order: room.order || 99,
+            dbValues: getDbValuesForRoom(key)
+          }))
+          .sort((a, b) => a.order - b.order);
+        
+        console.log('Loaded room config:', enabledRooms.length, 'enabled rooms');
+        
+      } catch (error) {
+        console.error('Error loading room config:', error);
+        roomConfig = defaultRoomConfig;
+        enabledRooms = Object.entries(defaultRoomConfig)
+          .filter(([key, room]) => room.enabled)
+          .map(([key, room]) => ({
+            id: key.toLowerCase().replace('_', '-'),
+            key: key,
+            name: room.displayName || key.replace('_', ' '),
+            color: room.color,
+            borderColor: room.borderColor,
+            order: room.order || 99,
+            dbValues: getDbValuesForRoom(key)
+          }))
+          .sort((a, b) => a.order - b.order);
+      }
+    }
+    
+    function getDbValuesForRoom(key) {
+      const mappings = {
+        'Room_1': ['Room_1', '1', 'Room 1'],
+        'Room_2': ['Room_2', '2', 'Room 2'],
+        'Room_4': ['Room_4', '4', 'Room 4'],
+        'Room_5': ['Room_5', '5', 'Room 5'],
+        'Room_6': ['Room_6', '6', 'Room 6'],
+        'Room_7': ['Room_7', '7', 'Room 7'],
+        'Room_8': ['Room_8', '8', 'Room 8'],
+        'Room_9': ['Room_9', '9', 'Room 9'],
+        'Online': ['Online', 'Online Counselling'],
+        'Car_Park': ['Car_Park', 'Car Park']
+      };
+      return mappings[key] || [key];
+    }
+    
+    // ================================
+    // UTILISATION HELPERS
+    // ================================
+    function getUtilClass(utilisation, isDaily = false) {
+      if (isDaily) {
+        // Daily: >70% green, 45-70% yellow, 20-45% orange, <20% red
+        if (utilisation >= 70) return 'good';
+        if (utilisation >= 45) return 'okay';
+        if (utilisation >= 20) return 'poor';
+        return 'bad';
+      } else {
+        // Weekly/Monthly: >31% green, 20.5-31% yellow, 10-20.5% orange, <10% red
+        if (utilisation >= 31) return 'good';
+        if (utilisation >= 20.5) return 'okay';
+        if (utilisation >= 10) return 'poor';
+        return 'bad';
+      }
+    }
+    
+    function getUtilColor(utilisation, isDaily = false) {
+      const cls = getUtilClass(utilisation, isDaily);
+      const colors = {
+        'good': '#28a745',
+        'okay': '#ffc107',
+        'poor': '#fd7e14',
+        'bad': '#dc3545'
+      };
+      return colors[cls];
+    }
+    
+    function getHeatColor(roomsBooked) {
+      if (roomsBooked >= 7) return '#2e7d32';
+      if (roomsBooked >= 5) return '#4caf50';
+      if (roomsBooked >= 3) return '#81c784';
+      if (roomsBooked >= 1) return '#c8e6c9';
+      return '#f5f5f5';
+    }
+    
+    function getHeatTextColor(roomsBooked) {
+      if (roomsBooked >= 5) return 'white';
+      return '#333';
+    }
+    
+    // ================================
+    // DATE HELPERS
+    // ================================
+    function formatDate(date) {
+      return date.toISOString().split('T')[0];
+    }
+    
+    function getWeekStart(date) {
+      const d = new Date(date);
+      const day = d.getDay();
+      const diff = day === 0 ? -6 : 1 - day;
+      d.setDate(d.getDate() + diff);
+      d.setHours(12, 0, 0, 0);
+      return d;
+    }
+    
+    function getWeekEnd(weekStart) {
+      const d = new Date(weekStart);
+      d.setDate(d.getDate() + 6);
+      return d;
+    }
+    
+    function getMonthStart(date) {
+      return new Date(date.getFullYear(), date.getMonth(), 1, 12, 0, 0, 0);
+    }
+    
+    function getMonthEnd(date) {
+      return new Date(date.getFullYear(), date.getMonth() + 1, 0, 12, 0, 0, 0);
+    }
+    
+    function isSameDay(d1, d2) {
+      return d1.getFullYear() === d2.getFullYear() &&
+             d1.getMonth() === d2.getMonth() &&
+             d1.getDate() === d2.getDate();
+    }
+    
+    function isSameMonth(d1, d2) {
+      return d1.getFullYear() === d2.getFullYear() &&
+             d1.getMonth() === d2.getMonth();
+    }
+    
+    function formatDateShort(date) {
+      const day = date.getDate();
+      return `${day}${getDaySuffix(day)}`;
+    }
+    
+    function formatDateFull(date) {
+      const day = date.getDate();
+      const month = MONTH_NAMES[date.getMonth()];
+      return `${day}${getDaySuffix(day)} ${month}`;
+    }
+    
+    function formatDateWithYear(date) {
+      const day = date.getDate();
+      const month = MONTH_NAMES[date.getMonth()];
+      const year = date.getFullYear();
+      return `${day}${getDaySuffix(day)} ${month} ${year}`;
+    }
+    
+    function getDaySuffix(day) {
+      if (day >= 11 && day <= 13) return 'th';
+      switch (day % 10) {
+        case 1: return 'st';
+        case 2: return 'nd';
+        case 3: return 'rd';
+        default: return 'th';
+      }
+    }
+    
+    function getDaysBetween(start, end) {
+      const days = [];
+      const current = new Date(start + 'T12:00:00');
+      const endD = new Date(end + 'T12:00:00');
+      
+      while (current <= endD) {
+        days.push(formatDate(current));
+        current.setDate(current.getDate() + 1);
+      }
+      return days;
+    }
+    
+    // ================================
+    // NAVIGATION DISPLAY
+    // ================================
+    function updateNavigationDisplay() {
+      const today = new Date();
+      today.setHours(12, 0, 0, 0);
+      
+      const periodLabel = document.getElementById('periodLabel');
+      const periodValue = document.getElementById('periodValue');
+      const periodDates = document.getElementById('periodDates');
+      const prevLabel = document.getElementById('prevLabel');
+      const nextLabel = document.getElementById('nextLabel');
+      const todayBtn = document.getElementById('todayBtn');
+      
+      if (currentRange === 'day') {
+        periodLabel.textContent = 'Day';
+        
+        const prevDay = new Date(currentDate);
+        prevDay.setDate(prevDay.getDate() - 1);
+        const nextDay = new Date(currentDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        
+        if (isSameDay(currentDate, today)) {
+          periodValue.textContent = 'Today';
+          periodDates.textContent = formatDateFull(currentDate);
+          todayBtn.style.display = 'none';
+        } else {
+          const yesterday = new Date(today);
+          yesterday.setDate(yesterday.getDate() - 1);
+          const tomorrow = new Date(today);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          
+          if (isSameDay(currentDate, yesterday)) {
+            periodValue.textContent = 'Yesterday';
+          } else if (isSameDay(currentDate, tomorrow)) {
+            periodValue.textContent = 'Tomorrow';
+          } else {
+            periodValue.textContent = DAY_NAMES[currentDate.getDay()];
+          }
+          periodDates.textContent = formatDateWithYear(currentDate);
+          todayBtn.style.display = 'inline-block';
+        }
+        
+        if (isSameDay(prevDay, today)) {
+          prevLabel.textContent = 'Today';
+        } else {
+          const yesterday = new Date(today);
+          yesterday.setDate(yesterday.getDate() - 1);
+          prevLabel.textContent = isSameDay(prevDay, yesterday) ? 'Yesterday' : formatDateFull(prevDay);
+        }
+        
+        if (isSameDay(nextDay, today)) {
+          nextLabel.textContent = 'Today';
+        } else {
+          const tomorrow = new Date(today);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          nextLabel.textContent = isSameDay(nextDay, tomorrow) ? 'Tomorrow' : formatDateFull(nextDay);
+        }
+        
+        startDate = new Date(currentDate);
+        endDate = new Date(currentDate);
+        
+      } else if (currentRange === 'week') {
+        periodLabel.textContent = 'Week';
+        
+        const currentWeekStart = getWeekStart(currentDate);
+        const currentWeekEnd = getWeekEnd(currentWeekStart);
+        const todayWeekStart = getWeekStart(today);
+        
+        const prevWeekStart = new Date(currentWeekStart);
+        prevWeekStart.setDate(prevWeekStart.getDate() - 7);
+        const nextWeekStart = new Date(currentWeekStart);
+        nextWeekStart.setDate(nextWeekStart.getDate() + 7);
+        
+        const lastWeekStart = new Date(todayWeekStart);
+        lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+        const nextWeekFromToday = new Date(todayWeekStart);
+        nextWeekFromToday.setDate(nextWeekFromToday.getDate() + 7);
+        
+        if (isSameDay(currentWeekStart, todayWeekStart)) {
+          periodValue.textContent = 'This Week';
+          todayBtn.style.display = 'none';
+        } else if (isSameDay(currentWeekStart, lastWeekStart)) {
+          periodValue.textContent = 'Last Week';
+          todayBtn.style.display = 'inline-block';
+        } else if (isSameDay(currentWeekStart, nextWeekFromToday)) {
+          periodValue.textContent = 'Next Week';
+          todayBtn.style.display = 'inline-block';
+        } else {
+          periodValue.textContent = MONTH_NAMES[currentWeekStart.getMonth()];
+          todayBtn.style.display = 'inline-block';
+        }
+        
+        if (currentWeekStart.getMonth() === currentWeekEnd.getMonth()) {
+          periodDates.textContent = `${formatDateShort(currentWeekStart)} - ${formatDateFull(currentWeekEnd)} ${currentWeekStart.getFullYear()}`;
+        } else {
+          periodDates.textContent = `${formatDateFull(currentWeekStart)} - ${formatDateFull(currentWeekEnd)}`;
+        }
+        
+        if (isSameDay(prevWeekStart, todayWeekStart)) {
+          prevLabel.textContent = 'This Week';
+        } else if (isSameDay(prevWeekStart, lastWeekStart)) {
+          prevLabel.textContent = 'Last Week';
+        } else {
+          const pwe = getWeekEnd(prevWeekStart);
+          prevLabel.textContent = `${formatDateShort(prevWeekStart)}-${formatDateShort(pwe)} ${MONTH_NAMES[prevWeekStart.getMonth()].substring(0, 3)}`;
+        }
+        
+        if (isSameDay(nextWeekStart, todayWeekStart)) {
+          nextLabel.textContent = 'This Week';
+        } else if (isSameDay(nextWeekStart, nextWeekFromToday)) {
+          nextLabel.textContent = 'Next Week';
+        } else {
+          const nwe = getWeekEnd(nextWeekStart);
+          nextLabel.textContent = `${formatDateShort(nextWeekStart)}-${formatDateShort(nwe)} ${MONTH_NAMES[nextWeekStart.getMonth()].substring(0, 3)}`;
+        }
+        
+        startDate = currentWeekStart;
+        endDate = currentWeekEnd;
+        
+      } else if (currentRange === 'month') {
+        periodLabel.textContent = 'Month';
+        
+        const currentMonthStart = getMonthStart(currentDate);
+        const currentMonthEnd = getMonthEnd(currentDate);
+        
+        const prevMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+        const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+        
+        const monthName = MONTH_NAMES[currentDate.getMonth()];
+        const year = currentDate.getFullYear();
+        
+        if (isSameMonth(currentDate, today)) {
+          periodValue.textContent = 'This Month';
+          periodDates.textContent = `${monthName} ${year}`;
+          todayBtn.style.display = 'none';
+        } else {
+          periodValue.textContent = monthName;
+          periodDates.textContent = year.toString();
+          todayBtn.style.display = 'inline-block';
+        }
+        
+        prevLabel.textContent = MONTH_NAMES[prevMonth.getMonth()];
+        nextLabel.textContent = MONTH_NAMES[nextMonth.getMonth()];
+        
+        startDate = currentMonthStart;
+        endDate = currentMonthEnd;
+        
+      } else if (currentRange === 'custom') {
+        document.getElementById('navigationRow').style.display = 'none';
+        return;
+      }
+      
+      document.getElementById('navigationRow').style.display = 'flex';
+    }
+    
+    // ================================
+    // NAVIGATION ACTIONS
+    // ================================
+    function navigatePeriod(direction) {
+      if (currentRange === 'day') {
+        currentDate.setDate(currentDate.getDate() + direction);
+      } else if (currentRange === 'week') {
+        currentDate.setDate(currentDate.getDate() + (direction * 7));
+      } else if (currentRange === 'month') {
+        currentDate.setMonth(currentDate.getMonth() + direction);
+      }
+      
+      updateNavigationDisplay();
+      loadReports();
+    }
+    
+    function goToToday() {
+      currentDate = new Date();
+      currentDate.setHours(12, 0, 0, 0);
+      updateNavigationDisplay();
+      loadReports();
+    }
+    
+    // ================================
+    // DATE RANGE FUNCTIONS
+    // ================================
+    function setQuickRange(range) {
+      currentRange = range;
+      
+      document.querySelectorAll('.quick-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      const customRange = document.getElementById('customDateRange');
+      
+      if (range === 'custom') {
+        customRange.style.display = 'flex';
+        document.getElementById('navigationRow').style.display = 'none';
+        return;
+      }
+      
+      customRange.style.display = 'none';
+      
+      currentDate = new Date();
+      currentDate.setHours(12, 0, 0, 0);
+      
+      updateNavigationDisplay();
+      updateRightPanel();
+      loadReports();
+    }
+    
+    function applyCustomRange() {
+      startDate = new Date(document.getElementById('startDate').value + 'T00:00:00');
+      endDate = new Date(document.getElementById('endDate').value + 'T23:59:59');
+      loadReports();
+    }
+    
+    function getDateRange() {
+      return {
+        start: formatDate(startDate),
+        end: formatDate(endDate)
+      };
+    }
+    
+    // ================================
+    // RIGHT PANEL SWITCH
+    // ================================
+    function updateRightPanel() {
+      const header = document.getElementById('rightPanelHeader');
+      const dailyTable = document.getElementById('dailyTableContainer');
+      const heatmap = document.getElementById('heatmapContainer');
+      const counsellorDay = document.getElementById('counsellorDayContainer');
+      
+      if (currentRange === 'week') {
+        header.textContent = '🔥 Weekly Heat Map';
+        dailyTable.style.display = 'none';
+        heatmap.style.display = 'block';
+        counsellorDay.style.display = 'none';
+      } else if (currentRange === 'day') {
+        header.textContent = '👥 Counsellors Today';
+        dailyTable.style.display = 'none';
+        heatmap.style.display = 'none';
+        counsellorDay.style.display = 'block';
+      } else {
+        header.textContent = '📅 Daily Breakdown';
+        dailyTable.style.display = 'block';
+        heatmap.style.display = 'none';
+        counsellorDay.style.display = 'none';
+      }
+    }
+    
+    // ================================
+    // DATA LOADING
+    // ================================
+    async function loadReports() {
+      try {
+        const snapshot = await database.ref('bookings').once('value');
+        const data = snapshot.val() || [];
+        const allBookings = Array.isArray(data) ? data : Object.values(data);
+        
+        bookingData = allBookings.filter(b => 
+          b.status !== 'cancelled' && 
+          b.status !== 'cancel' &&
+          b.room !== 'Henley_Holding_Room' &&
+          b.room !== '18' &&
+          b.date !== '2030-01-01'
+        );
+        
+        updateRightPanel();
+        calculateAndDisplayStats();
+        
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
+    }
+    
+    // ================================
+    // STATISTICS CALCULATION
+    // ================================
+    function calculateAndDisplayStats() {
+      const range = getDateRange();
+      const days = getDaysBetween(range.start, range.end);
+      const isDaily = currentRange === 'day';
+      
+      const filteredBookings = bookingData.filter(b => 
+        b.date >= range.start && b.date <= range.end
+      );
+      
+      let totalHours = 0;
+      const counsellors = new Set();
+      
+      filteredBookings.forEach(b => {
+        const startHour = parseInt(b.start.split(':')[0]);
+        const endHour = parseInt(b.end.split(':')[0]);
+        totalHours += (endHour - startHour);
+        
+        if (b.client) counsellors.add(b.client);
+      });
+      
+      const totalAvailableHours = enabledRooms.length * HOURS_PER_DAY * days.length;
+      const avgUtilisation = totalAvailableHours > 0 
+        ? Math.round((totalHours / totalAvailableHours) * 100) 
+        : 0;
+      
+      document.getElementById('totalBookings').textContent = filteredBookings.length;
+      document.getElementById('totalHours').textContent = totalHours;
+      
+      const avgUtilEl = document.getElementById('avgUtilisation');
+      avgUtilEl.textContent = avgUtilisation + '%';
+      avgUtilEl.style.color = getUtilColor(avgUtilisation, isDaily);
+      
+      document.getElementById('uniqueCounsellors').textContent = counsellors.size;
+      
+      // Update charts
+      displayRoomBarChart(filteredBookings, days, isDaily);
+      
+      if (currentRange === 'week') {
+        displayHeatMap(days);
+      } else if (currentRange === 'day') {
+        displayCounsellorDay(filteredBookings);
+      } else {
+        displayDailyBreakdown(days, isDaily);
+      }
+    }
+    
+    // ================================
+    // COUNSELLOR DAY VIEW
+    // ================================
+    function displayCounsellorDay(filteredBookings) {
+      const container = document.getElementById('counsellorDayContent');
+      
+      if (filteredBookings.length === 0) {
+        container.innerHTML = `
+          <div class="no-counsellors">
+            <div class="no-counsellors-icon">📅</div>
+            <div>No bookings scheduled for this day</div>
+          </div>
+        `;
+        return;
+      }
+      
+      // Group bookings by counsellor
+      const counsellorMap = {};
+      
+      filteredBookings.forEach(booking => {
+        const name = booking.client || 'Unknown';
+        if (!counsellorMap[name]) {
+          counsellorMap[name] = {
+            name: name,
+            bookings: [],
+            totalHours: 0,
+            timeSlots: {} // hour -> array of room infos
+          };
+        }
+        
+        counsellorMap[name].bookings.push(booking);
+        
+        const startHour = parseInt(booking.start.split(':')[0]);
+        const endHour = parseInt(booking.end.split(':')[0]);
+        counsellorMap[name].totalHours += (endHour - startHour);
+        
+        // Find room info
+        let roomInfo = enabledRooms.find(r => r.dbValues.includes(booking.room));
+        if (!roomInfo && booking.location && booking.location.toLowerCase().includes('online')) {
+          roomInfo = enabledRooms.find(r => r.key === 'Online');
+        }
+        
+        // Track time slots with room colour - now as array to support multiple bookings
+        for (let h = startHour; h < endHour; h++) {
+          if (!counsellorMap[name].timeSlots[h]) {
+            counsellorMap[name].timeSlots[h] = [];
+          }
+          // Only add if this room isn't already in the array for this hour
+          const roomKey = roomInfo ? roomInfo.key : 'unknown';
+          if (!counsellorMap[name].timeSlots[h].find(r => r && r.key === roomKey)) {
+            counsellorMap[name].timeSlots[h].push(roomInfo);
+          }
+        }
+      });
+      
+      // Convert to array and sort by hours (descending)
+      const counsellors = Object.values(counsellorMap).sort((a, b) => b.totalHours - a.totalHours);
+      
+      // Calculate totals
+      const totalCounsellors = counsellors.length;
+      const totalBookings = filteredBookings.length;
+      const totalHours = counsellors.reduce((sum, c) => sum + c.totalHours, 0);
+      
+      // Build HTML
+      let html = `
+        <div class="counsellor-summary">
+          <div class="stat">
+            <div class="stat-num">${totalCounsellors}</div>
+            <div class="stat-label">Counsellors</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num">${totalBookings}</div>
+            <div class="stat-label">Sessions</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num">${totalHours}</div>
+            <div class="stat-label">Hours</div>
+          </div>
+        </div>
+        <div class="counsellor-list">
+      `;
+      
+      counsellors.forEach(counsellor => {
+        const initials = getInitials(counsellor.name);
+        
+        // Build time bar (8am-8pm = 13 slots) with room colours
+        let timeBarHtml = '';
+        for (let h = 8; h <= 20; h++) {
+          const roomInfos = counsellor.timeSlots[h];
+          if (roomInfos && roomInfos.length > 0) {
+            if (roomInfos.length === 1) {
+              // Single booking
+              const roomInfo = roomInfos[0];
+              if (roomInfo) {
+                timeBarHtml += `<div class="time-slot" style="background: ${roomInfo.color}; border: 1px solid ${roomInfo.borderColor};" title="${h}:00 - ${roomInfo.name}"></div>`;
+              } else {
+                timeBarHtml += `<div class="time-slot" style="background: #ccc;" title="${h}:00 - Unknown"></div>`;
+              }
+            } else {
+              // Multiple bookings - stack them
+              const roomNames = roomInfos.map(r => r ? r.name : 'Unknown').join(' + ');
+              let segmentsHtml = roomInfos.map(roomInfo => {
+                if (roomInfo) {
+                  return `<div class="time-slot-segment" style="background: ${roomInfo.color};"></div>`;
+                } else {
+                  return `<div class="time-slot-segment" style="background: #ccc;"></div>`;
+                }
+              }).join('');
+              timeBarHtml += `<div class="time-slot has-conflict" title="${h}:00 - ${roomNames}">${segmentsHtml}</div>`;
+            }
+          } else {
+            timeBarHtml += `<div class="time-slot" title="${h}:00"></div>`;
+          }
+        }
+        
+        html += `
+          <div class="counsellor-card">
+            <div class="counsellor-avatar">${initials}</div>
+            <div class="counsellor-name">${counsellor.name}</div>
+            <div class="counsellor-time-bar" title="8am-8pm">${timeBarHtml}</div>
+            <div class="counsellor-stats">
+              <div class="counsellor-stat">
+                <div class="counsellor-stat-value">${counsellor.bookings.length}</div>
+                <div class="counsellor-stat-label">Sess</div>
+              </div>
+              <div class="counsellor-stat">
+                <div class="counsellor-stat-value">${counsellor.totalHours}</div>
+                <div class="counsellor-stat-label">Hrs</div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      
+      html += '</div>';
+      container.innerHTML = html;
+    }
+    
+    function getInitials(name) {
+      if (!name) return '?';
+      const parts = name.trim().split(/\s+/);
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      }
+      return name.substring(0, 2).toUpperCase();
+    }
+    
+    function getContrastColor(hexColor) {
+      // Convert hex to RGB
+      const hex = hexColor.replace('#', '');
+      const r = parseInt(hex.substr(0, 2), 16);
+      const g = parseInt(hex.substr(2, 2), 16);
+      const b = parseInt(hex.substr(4, 2), 16);
+      
+      // Calculate luminance
+      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      
+      return luminance > 0.5 ? '#333' : '#fff';
+    }
+    
+    // ================================
+    // ROOM BAR CHART
+    // ================================
+    function displayRoomBarChart(filteredBookings, days, isDaily) {
+      const ctx = document.getElementById('roomBarChart').getContext('2d');
+      
+      // Calculate data for each room
+      const roomData = enabledRooms.map(room => {
+        const roomBookings = filteredBookings.filter(b => 
+          room.dbValues.includes(b.room) || 
+          (room.key === 'Online' && b.location && b.location.toLowerCase().includes('online'))
+        );
+        
+        let roomHours = 0;
+        roomBookings.forEach(b => {
+          const startHour = parseInt(b.start.split(':')[0]);
+          const endHour = parseInt(b.end.split(':')[0]);
+          roomHours += (endHour - startHour);
+        });
+        
+        const availableHours = HOURS_PER_DAY * days.length;
+        const utilisation = availableHours > 0 
+          ? Math.round((roomHours / availableHours) * 100) 
+          : 0;
+        
+        return {
+          name: room.name,
+          utilisation: utilisation,
+          color: room.color,
+          utilColor: getUtilColor(utilisation, isDaily)
+        };
+      });
+      
+      // Destroy previous chart if exists
+      if (barChart) {
+        barChart.destroy();
+      }
+      
+      barChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: roomData.map(r => r.name),
+          datasets: [{
+            label: 'Utilisation %',
+            data: roomData.map(r => r.utilisation),
+            backgroundColor: roomData.map(r => r.utilColor),
+            borderColor: roomData.map(r => r.utilColor),
+            borderWidth: 1,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return `${context.parsed.x}% utilisation`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              beginAtZero: true,
+              max: 100,
+              ticks: {
+                callback: function(value) {
+                  return value + '%';
+                }
+              },
+              grid: {
+                color: '#f0f0f0'
+              }
+            },
+            y: {
+              grid: {
+                display: false
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    // ================================
+    // HEAT MAP
+    // ================================
+    function displayHeatMap(days) {
+      const container = document.getElementById('heatmapGrid');
+      container.innerHTML = '';
+      
+      // Create data structure: time -> day -> count
+      const heatData = {};
+      BUSINESS_HOURS.forEach(time => {
+        heatData[time] = {};
+        days.forEach(day => {
+          heatData[time][day] = 0;
+        });
+      });
+      
+      // Count bookings per time slot
+      const filteredBookings = bookingData.filter(b => 
+        b.date >= days[0] && b.date <= days[days.length - 1]
+      );
+      
+      filteredBookings.forEach(booking => {
+        const startHour = parseInt(booking.start.split(':')[0]);
+        const endHour = parseInt(booking.end.split(':')[0]);
+        
+        for (let h = startHour; h < endHour; h++) {
+          const timeKey = `${String(h).padStart(2, '0')}:00`;
+          if (heatData[timeKey] && heatData[timeKey][booking.date] !== undefined) {
+            heatData[timeKey][booking.date]++;
+          }
+        }
+      });
+      
+      // Calculate daily totals
+      const dailyTotals = {};
+      days.forEach(day => {
+        let totalHours = 0;
+        BUSINESS_HOURS.forEach(time => {
+          totalHours += heatData[time][day];
+        });
+        const availableHours = enabledRooms.length * HOURS_PER_DAY;
+        dailyTotals[day] = {
+          hours: totalHours,
+          utilisation: availableHours > 0 ? Math.round((totalHours / availableHours) * 100) : 0
+        };
+      });
+      
+      // Header row
+      const headerRow = document.createElement('div');
+      headerRow.className = 'heatmap-header-row';
+      days.forEach(day => {
+        const dateObj = new Date(day + 'T12:00:00');
+        const cell = document.createElement('div');
+        cell.className = 'heatmap-header-cell';
+        cell.innerHTML = `${DAY_NAMES_SHORT[dateObj.getDay()]}<br>${dateObj.getDate()}`;
+        headerRow.appendChild(cell);
+      });
+      container.appendChild(headerRow);
+      
+      // Data rows
+      BUSINESS_HOURS.forEach(time => {
+        const row = document.createElement('div');
+        row.className = 'heatmap-row';
+        
+        const timeLabel = document.createElement('div');
+        timeLabel.className = 'heatmap-time';
+        timeLabel.textContent = time;
+        row.appendChild(timeLabel);
+        
+        days.forEach(day => {
+          const count = heatData[time][day];
+          const cell = document.createElement('div');
+          cell.className = 'heatmap-cell';
+          cell.style.backgroundColor = getHeatColor(count);
+          cell.style.color = getHeatTextColor(count);
+          cell.textContent = count > 0 ? count : '';
+          cell.title = `${day} ${time}: ${count} rooms booked`;
+          row.appendChild(cell);
+        });
+        
+        container.appendChild(row);
+      });
+      
+      // Totals row
+      const totalsRow = document.createElement('div');
+      totalsRow.className = 'heatmap-totals-row';
+      
+      const totalsLabel = document.createElement('div');
+      totalsLabel.className = 'heatmap-totals-label';
+      totalsLabel.textContent = 'Daily %';
+      totalsRow.appendChild(totalsLabel);
+      
+      days.forEach(day => {
+        const total = dailyTotals[day];
+        const cell = document.createElement('div');
+        cell.className = 'heatmap-total-cell';
+        
+        // Use weekly thresholds for the totals
+        const utilClass = getUtilClass(total.utilisation, false);
+        cell.classList.add('bg-' + utilClass);
+        
+        cell.innerHTML = `${total.utilisation}%`;
+        cell.title = `${day}: ${total.hours} hours booked, ${total.utilisation}% utilisation`;
+        totalsRow.appendChild(cell);
+      });
+      
+      container.appendChild(totalsRow);
+    }
+    
+    // ================================
+    // DAILY BREAKDOWN
+    // ================================
+    function displayDailyBreakdown(days, isDaily) {
+      const tbody = document.getElementById('dailyTableBody');
+      tbody.innerHTML = '';
+      
+      days.forEach(day => {
+        const dayBookings = bookingData.filter(b => b.date === day);
+        
+        let dayHours = 0;
+        dayBookings.forEach(b => {
+          const startHour = parseInt(b.start.split(':')[0]);
+          const endHour = parseInt(b.end.split(':')[0]);
+          dayHours += (endHour - startHour);
+        });
+        
+        const availableHours = enabledRooms.length * HOURS_PER_DAY;
+        const utilisation = availableHours > 0 
+          ? Math.round((dayHours / availableHours) * 100) 
+          : 0;
+        
+        const utilClass = getUtilClass(utilisation, isDaily);
+        const utilColor = getUtilColor(utilisation, isDaily);
+        
+        const dateObj = new Date(day + 'T12:00:00');
+        const dayName = DAY_NAMES[dateObj.getDay()];
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${day}</td>
+          <td>${dayName}</td>
+          <td class="number-col">${dayBookings.length}</td>
+          <td class="number-col">${dayHours}</td>
+          <td class="number-col" style="color: ${utilColor}; font-weight: 600;">${utilisation}%</td>
+        `;
+        
+        tbody.appendChild(row);
+      });
+      
+      if (days.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #666;">No data for selected period</td></tr>';
+      }
+    }
+  </script>
+</body>
+</html>

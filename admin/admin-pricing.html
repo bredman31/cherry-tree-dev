@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cherry Tree Centre - Pricing Configuration</title>
+  
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+    }
+    
+    /* Header */
+    .admin-header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: white;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    
+    .header-left h1 {
+      font-size: 18px;
+      font-weight: 500;
+    }
+    
+    .back-link {
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+      font-size: 13px;
+    }
+    
+    .back-link:hover {
+      color: white;
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: #28a745;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #218838;
+    }
+    
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+    
+    .btn-secondary:hover {
+      background: #5a6268;
+    }
+    
+    .btn-danger {
+      background: #dc3545;
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background: #c82333;
+    }
+    
+    .btn-small {
+      padding: 4px 10px;
+      font-size: 12px;
+    }
+    
+    /* Main content */
+    .main-content {
+      padding: 20px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    /* Cards */
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    
+    .card h2 {
+      font-size: 18px;
+      margin-bottom: 15px;
+      color: #1a1a2e;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 20px;
+    }
+    
+    /* Info text */
+    .info-text {
+      color: #666;
+      font-size: 13px;
+      margin-bottom: 15px;
+    }
+    
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    
+    th {
+      background: #f8f9fa;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    /* Form elements */
+    input, select {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    
+    input:focus, select:focus {
+      outline: none;
+      border-color: #0f3460;
+    }
+    
+    /* Add row */
+    .add-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    
+    /* Location section */
+    .location-section {
+      margin-bottom: 30px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    
+    .location-header {
+      background: #f0f0f0;
+      padding: 12px 15px;
+      font-weight: 600;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .location-rules {
+      padding: 15px;
+    }
+    
+    /* Rule row */
+    .rule-row {
+      background: #fafafa;
+      border: 1px solid #e8e8e8;
+      border-radius: 6px;
+      padding: 15px;
+      margin-bottom: 10px;
+    }
+    
+    .rule-row:last-child {
+      margin-bottom: 0;
+    }
+    
+    .rule-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      align-items: start;
+    }
+    
+    .rule-field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    
+    .rule-field label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+    }
+    
+    .rule-field.wide {
+      grid-column: span 2;
+    }
+    
+    /* Days checkboxes */
+    .days-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    
+    .day-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+    }
+    
+    .day-checkbox input {
+      width: 16px;
+      height: 16px;
+    }
+    
+    /* Room checkboxes */
+    .rooms-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    
+    .room-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      background: #f0f0f0;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    
+    .room-checkbox input {
+      width: 14px;
+      height: 14px;
+    }
+    
+    .room-checkbox.selected {
+      background: #d4edda;
+    }
+    
+    /* Rule actions */
+    .rule-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #eee;
+    }
+    
+    /* Status indicators */
+    .status-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    
+    .status-badge.saved {
+      background: #d4edda;
+      color: #155724;
+    }
+    
+    .status-badge.unsaved {
+      background: #fff3cd;
+      color: #856404;
+    }
+    
+    /* Price calculator */
+    .calculator {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+    }
+    
+    .calc-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    
+    .calc-field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    
+    .calc-field label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+    }
+    
+    .calc-result {
+      background: white;
+      border: 2px solid #28a745;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+    }
+    
+    .calc-price {
+      font-size: 36px;
+      font-weight: 700;
+      color: #28a745;
+    }
+    
+    .calc-breakdown {
+      color: #666;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+    
+    /* Loading & messages */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+    
+    .message {
+      padding: 12px 15px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+    }
+    
+    .message.success {
+      background: #d4edda;
+      color: #155724;
+    }
+    
+    .message.error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    
+    /* Mobile */
+    @media (max-width: 768px) {
+      .card-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .rule-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .rule-field.wide {
+        grid-column: span 1;
+      }
+      
+      .header-actions {
+        width: 100%;
+        justify-content: stretch;
+      }
+      
+      .header-actions .btn {
+        flex: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="admin-header">
+    <div class="header-left">
+      <a href="admin-index.html" class="back-link">← Admin Portal</a>
+      <h1>💷 Pricing Configuration</h1>
+    </div>
+    <div class="header-actions">
+      <span class="status-badge saved" id="statusBadge">Saved</span>
+      <button class="btn btn-primary" onclick="saveConfig()" id="saveBtn">💾 Save Changes</button>
+      <button class="btn btn-secondary" onclick="loadConfig()">↻ Reload</button>
+    </div>
+  </header>
+  
+  <!-- Main Content -->
+  <main class="main-content">
+    <div id="messageArea"></div>
+    
+    <div class="card-grid">
+      <!-- Rate Tiers -->
+      <div class="card">
+        <h2>💷 Rate Tiers</h2>
+        <p class="info-text">Define rate codes and amounts. These are referenced by location rules.</p>
+        
+        <table id="ratesTable">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Amount (pence)</th>
+              <th>Display</th>
+              <th>Label</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="ratesBody"></tbody>
+        </table>
+        
+        <div class="add-row">
+          <input type="text" id="newRateCode" placeholder="Code (e.g. D)" maxlength="2" style="width: 60px;">
+          <input type="number" id="newRateAmount" placeholder="Pence" style="width: 80px;">
+          <input type="text" id="newRateLabel" placeholder="Label" style="width: 120px;">
+          <button class="btn btn-primary btn-small" onclick="addRate()">+ Add</button>
+        </div>
+      </div>
+      
+      <!-- Price Calculator -->
+      <div class="card">
+        <h2>🧮 Price Calculator (Test)</h2>
+        <p class="info-text">Test your pricing configuration before saving.</p>
+        
+        <div class="calculator">
+          <div class="calc-grid">
+            <div class="calc-field">
+              <label>Location</label>
+              <select id="calcLocation" onchange="calculateTest()">
+                <option value="2">Henley</option>
+                <option value="1">Buckhurst Hill</option>
+              </select>
+            </div>
+            <div class="calc-field">
+              <label>Room</label>
+              <select id="calcRoom" onchange="calculateTest()">
+                <option value="Room_1">Room 1</option>
+                <option value="Room_2">Room 2</option>
+                <option value="Room_4">Room 4</option>
+                <option value="Room_5">Room 5</option>
+                <option value="Room_6">Room 6</option>
+                <option value="Room_7">Room 7</option>
+                <option value="Room_8">Room 8</option>
+                <option value="Room_9">Room 9</option>
+                <option value="Car_Park">Car Park</option>
+                <option value="Online">Online</option>
+              </select>
+            </div>
+            <div class="calc-field">
+              <label>Day</label>
+              <select id="calcDay" onchange="calculateTest()">
+                <option value="0">Sunday</option>
+                <option value="1">Monday</option>
+                <option value="2">Tuesday</option>
+                <option value="3">Wednesday</option>
+                <option value="4">Thursday</option>
+                <option value="5">Friday</option>
+                <option value="6">Saturday</option>
+              </select>
+            </div>
+            <div class="calc-field">
+              <label>Hour</label>
+              <select id="calcHour" onchange="calculateTest()">
+                <option value="8">08:00</option>
+                <option value="9">09:00</option>
+                <option value="10" selected>10:00</option>
+                <option value="11">11:00</option>
+                <option value="12">12:00</option>
+                <option value="13">13:00</option>
+                <option value="14">14:00</option>
+                <option value="15">15:00</option>
+                <option value="16">16:00</option>
+                <option value="17">17:00</option>
+                <option value="18">18:00</option>
+                <option value="19">19:00</option>
+                <option value="20">20:00</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="calc-result">
+            <div class="calc-price" id="calcPrice">£0.00</div>
+            <div class="calc-breakdown" id="calcBreakdown">Select options above</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Location Pricing Rules -->
+    <div class="card">
+      <h2>📍 Location Pricing Rules</h2>
+      <p class="info-text">Define which rate applies for each location, day, time, and room. Rules are checked in order - first matching rule wins. If no rooms are selected, the rule applies to all rooms.</p>
+      
+      <div id="locationsContainer">
+        <!-- Populated by JavaScript -->
+      </div>
+    </div>
+  </main>
+  
+  <script>
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyCVp4QDAnh5RcxGZIrEY2LriUWKQNcNbzE",
+      authDomain: "cherry-tree-bookings.firebaseapp.com",
+      databaseURL: "https://cherry-tree-bookings-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "cherry-tree-bookings",
+      storageBucket: "cherry-tree-bookings.firebasestorage.app",
+      messagingSenderId: "280166213685",
+      appId: "1:280166213685:web:f80b11799f41f5f385297c"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    
+    // Room definitions by location
+    const LOCATION_ROOMS = {
+      "1": [ // Buckhurst Hill
+        { key: "Online", name: "Online" }
+      ],
+      "2": [ // Henley
+        { key: "Room_1", name: "Room 1" },
+        { key: "Room_2", name: "Room 2" },
+        { key: "Room_4", name: "Room 4" },
+        { key: "Room_5", name: "Room 5" },
+        { key: "Room_6", name: "Room 6" },
+        { key: "Room_7", name: "Room 7" },
+        { key: "Room_8", name: "Room 8" },
+        { key: "Room_9", name: "Room 9" },
+        { key: "Car_Park", name: "Car Park" }
+      ]
+    };
+    
+    const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    
+    // Default configuration
+    const defaultConfig = {
+      rates: {
+        "A": { amount: 1300, label: "Standard" },
+        "B": { amount: 1400, label: "Evening" },
+        "C": { amount: 800, label: "Sunday Special" }
+      },
+      locations: {
+        "1": {
+          name: "Buckhurst Hill",
+          rules: [
+            { days: [0, 6], startHour: 8, endHour: 21, rate: "A", rooms: [] },
+            { days: [1, 2, 3, 4, 5], startHour: 8, endHour: 17, rate: "A", rooms: [] },
+            { days: [1, 2, 3, 4, 5], startHour: 17, endHour: 21, rate: "B", rooms: [] }
+          ]
+        },
+        "2": {
+          name: "Henley",
+          rules: [
+            { days: [0], startHour: 8, endHour: 21, rate: "C", rooms: ["Room_1", "Room_2", "Room_4", "Room_5", "Room_6", "Room_7", "Room_8", "Room_9"] },
+            { days: [0, 1, 2, 3, 4, 5, 6], startHour: 8, endHour: 21, rate: "A", rooms: ["Car_Park"] },
+            { days: [1, 2, 3, 4, 5, 6], startHour: 8, endHour: 21, rate: "A", rooms: ["Room_1", "Room_2", "Room_4", "Room_5", "Room_6", "Room_7", "Room_8", "Room_9"] }
+          ]
+        }
+      },
+      durations: [
+        { minutes: 60, label: "1 Hour", multiplier: 1 }
+      ],
+      discounts: {}
+    };
+    
+    // Current config
+    let config = null;
+    let hasUnsavedChanges = false;
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', loadConfig);
+    
+    // Load configuration
+    async function loadConfig() {
+      try {
+        showMessage('Loading configuration...', 'info');
+        
+        const snapshot = await database.ref('pricing_config').once('value');
+        config = snapshot.val();
+        
+        if (!config) {
+          config = JSON.parse(JSON.stringify(defaultConfig));
+          showMessage('No configuration found. Using defaults.', 'info');
+        } else {
+          // Migrate old rules to include rooms array if missing
+          Object.keys(config.locations || {}).forEach(locId => {
+            const location = config.locations[locId];
+            if (location.rules) {
+              location.rules = location.rules.map(rule => ({
+                ...rule,
+                rooms: rule.rooms || []
+              }));
+            }
+          });
+          showMessage('Configuration loaded successfully.', 'success');
+        }
+        
+        renderAll();
+        markSaved();
+        
+      } catch (error) {
+        console.error('Error loading config:', error);
+        showMessage('Error loading configuration: ' + error.message, 'error');
+      }
+    }
+    
+    // Save configuration
+    async function saveConfig() {
+      try {
+        document.getElementById('saveBtn').disabled = true;
+        document.getElementById('saveBtn').textContent = 'Saving...';
+        
+        config.lastUpdated = new Date().toISOString();
+        
+        await database.ref('pricing_config').set(config);
+        
+        showMessage('Configuration saved successfully!', 'success');
+        markSaved();
+        
+      } catch (error) {
+        console.error('Error saving config:', error);
+        showMessage('Error saving configuration: ' + error.message, 'error');
+      } finally {
+        document.getElementById('saveBtn').disabled = false;
+        document.getElementById('saveBtn').textContent = '💾 Save Changes';
+      }
+    }
+    
+    // Mark as saved/unsaved
+    function markSaved() {
+      hasUnsavedChanges = false;
+      document.getElementById('statusBadge').className = 'status-badge saved';
+      document.getElementById('statusBadge').textContent = 'Saved';
+    }
+    
+    function markUnsaved() {
+      hasUnsavedChanges = true;
+      document.getElementById('statusBadge').className = 'status-badge unsaved';
+      document.getElementById('statusBadge').textContent = 'Unsaved';
+    }
+    
+    // Show message
+    function showMessage(text, type) {
+      const area = document.getElementById('messageArea');
+      area.innerHTML = `<div class="message ${type}">${text}</div>`;
+      
+      if (type === 'success' || type === 'info') {
+        setTimeout(() => {
+          area.innerHTML = '';
+        }, 3000);
+      }
+    }
+    
+    // Render all sections
+    function renderAll() {
+      renderRates();
+      renderLocations();
+      calculateTest();
+    }
+    
+    // Render rates table
+    function renderRates() {
+      const tbody = document.getElementById('ratesBody');
+      tbody.innerHTML = '';
+      
+      Object.entries(config.rates || {}).forEach(([code, rate]) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${code}</strong></td>
+          <td>
+            <input type="number" value="${rate.amount}" style="width: 80px;"
+                   onchange="updateRate('${code}', 'amount', parseInt(this.value))">
+          </td>
+          <td>£${(rate.amount / 100).toFixed(2)}</td>
+          <td>
+            <input type="text" value="${rate.label}" style="width: 120px;"
+                   onchange="updateRate('${code}', 'label', this.value)">
+          </td>
+          <td>
+            <button class="btn btn-danger btn-small" onclick="deleteRate('${code}')">×</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+    
+    // Rate functions
+    function updateRate(code, field, value) {
+      config.rates[code][field] = value;
+      markUnsaved();
+      renderRates();
+      calculateTest();
+    }
+    
+    function addRate() {
+      const code = document.getElementById('newRateCode').value.toUpperCase().trim();
+      const amount = parseInt(document.getElementById('newRateAmount').value);
+      const label = document.getElementById('newRateLabel').value.trim();
+      
+      if (!code || !amount || !label) {
+        showMessage('Please fill in all rate fields', 'error');
+        return;
+      }
+      
+      if (config.rates[code]) {
+        showMessage('Rate code already exists', 'error');
+        return;
+      }
+      
+      config.rates[code] = { amount, label };
+      markUnsaved();
+      renderRates();
+      
+      document.getElementById('newRateCode').value = '';
+      document.getElementById('newRateAmount').value = '';
+      document.getElementById('newRateLabel').value = '';
+    }
+    
+    function deleteRate(code) {
+      if (!confirm(`Delete rate ${code}?`)) return;
+      delete config.rates[code];
+      markUnsaved();
+      renderRates();
+    }
+    
+    // Render locations
+    function renderLocations() {
+      const container = document.getElementById('locationsContainer');
+      container.innerHTML = '';
+      
+      Object.entries(config.locations || {}).forEach(([locId, location]) => {
+        const section = document.createElement('div');
+        section.className = 'location-section';
+        
+        let rulesHtml = '';
+        (location.rules || []).forEach((rule, ruleIdx) => {
+          rulesHtml += renderRule(locId, ruleIdx, rule);
+        });
+        
+        section.innerHTML = `
+          <div class="location-header">
+            📍 ${location.name} (ID: ${locId})
+          </div>
+          <div class="location-rules">
+            ${rulesHtml}
+            <div class="add-row">
+              <button class="btn btn-primary btn-small" onclick="addRule('${locId}')">+ Add Rule</button>
+            </div>
+          </div>
+        `;
+        
+        container.appendChild(section);
+      });
+    }
+    
+    // Render single rule
+    function renderRule(locId, ruleIdx, rule) {
+      const rateOptions = Object.keys(config.rates || {}).map(code => 
+        `<option value="${code}" ${rule.rate === code ? 'selected' : ''}>${code} - ${config.rates[code].label}</option>`
+      ).join('');
+      
+      const daysHtml = DAY_NAMES.map((name, idx) => `
+        <label class="day-checkbox">
+          <input type="checkbox" ${rule.days.includes(idx) ? 'checked' : ''}
+                 onchange="toggleDay('${locId}', ${ruleIdx}, ${idx})">
+          ${name}
+        </label>
+      `).join('');
+      
+      const locationRooms = LOCATION_ROOMS[locId] || [];
+      const roomsHtml = locationRooms.map(room => {
+        const isSelected = rule.rooms && rule.rooms.includes(room.key);
+        return `
+          <label class="room-checkbox ${isSelected ? 'selected' : ''}">
+            <input type="checkbox" ${isSelected ? 'checked' : ''}
+                   onchange="toggleRoom('${locId}', ${ruleIdx}, '${room.key}')">
+            ${room.name}
+          </label>
+        `;
+      }).join('');
+      
+      const roomsNote = (!rule.rooms || rule.rooms.length === 0) 
+        ? '<em style="font-size: 11px; color: #888;">(Applies to all rooms)</em>' 
+        : '';
+      
+      return `
+        <div class="rule-row">
+          <div class="rule-grid">
+            <div class="rule-field wide">
+              <label>Days</label>
+              <div class="days-grid">${daysHtml}</div>
+            </div>
+            <div class="rule-field">
+              <label>From Hour</label>
+              <input type="number" min="0" max="23" value="${rule.startHour}"
+                     onchange="updateRule('${locId}', ${ruleIdx}, 'startHour', parseInt(this.value))">
+            </div>
+            <div class="rule-field">
+              <label>Until Hour</label>
+              <input type="number" min="0" max="24" value="${rule.endHour}"
+                     onchange="updateRule('${locId}', ${ruleIdx}, 'endHour', parseInt(this.value))">
+            </div>
+            <div class="rule-field">
+              <label>Rate</label>
+              <select onchange="updateRule('${locId}', ${ruleIdx}, 'rate', this.value)">
+                ${rateOptions}
+              </select>
+            </div>
+            <div class="rule-field wide">
+              <label>Rooms ${roomsNote}</label>
+              <div class="rooms-grid">${roomsHtml}</div>
+            </div>
+          </div>
+          <div class="rule-actions">
+            <button class="btn btn-danger btn-small" onclick="deleteRule('${locId}', ${ruleIdx})">Delete Rule</button>
+          </div>
+        </div>
+      `;
+    }
+    
+    // Rule functions
+    function updateRule(locId, ruleIdx, field, value) {
+      config.locations[locId].rules[ruleIdx][field] = value;
+      markUnsaved();
+      calculateTest();
+    }
+    
+    function toggleDay(locId, ruleIdx, dayIdx) {
+      const rule = config.locations[locId].rules[ruleIdx];
+      const idx = rule.days.indexOf(dayIdx);
+      if (idx > -1) {
+        rule.days.splice(idx, 1);
+      } else {
+        rule.days.push(dayIdx);
+        rule.days.sort((a, b) => a - b);
+      }
+      markUnsaved();
+      calculateTest();
+    }
+    
+    function toggleRoom(locId, ruleIdx, roomKey) {
+      const rule = config.locations[locId].rules[ruleIdx];
+      if (!rule.rooms) rule.rooms = [];
+      
+      const idx = rule.rooms.indexOf(roomKey);
+      if (idx > -1) {
+        rule.rooms.splice(idx, 1);
+      } else {
+        rule.rooms.push(roomKey);
+      }
+      markUnsaved();
+      renderLocations();
+      calculateTest();
+    }
+    
+    function addRule(locId) {
+      const locationRooms = LOCATION_ROOMS[locId] || [];
+      config.locations[locId].rules.push({
+        days: [1, 2, 3, 4, 5],
+        startHour: 8,
+        endHour: 21,
+        rate: Object.keys(config.rates)[0] || 'A',
+        rooms: []
+      });
+      markUnsaved();
+      renderLocations();
+    }
+    
+    function deleteRule(locId, ruleIdx) {
+      if (!confirm('Delete this rule?')) return;
+      config.locations[locId].rules.splice(ruleIdx, 1);
+      markUnsaved();
+      renderLocations();
+    }
+    
+    // Price calculator
+    function calculateTest() {
+      const locId = document.getElementById('calcLocation').value;
+      const room = document.getElementById('calcRoom').value;
+      const day = parseInt(document.getElementById('calcDay').value);
+      const hour = parseInt(document.getElementById('calcHour').value);
+      
+      const result = calculatePrice(locId, room, day, hour);
+      
+      document.getElementById('calcPrice').textContent = `£${(result.amount / 100).toFixed(2)}`;
+      document.getElementById('calcBreakdown').textContent = result.breakdown;
+    }
+    
+    function calculatePrice(locationId, roomKey, dayOfWeek, hour) {
+      if (!config) {
+        return { amount: 0, breakdown: 'Config not loaded' };
+      }
+      
+      const location = config.locations[locationId];
+      if (!location) {
+        return { amount: 0, breakdown: 'Location not found' };
+      }
+      
+      // Find matching rule (first match wins)
+      let matchedRule = null;
+      for (const rule of location.rules) {
+        // Check day
+        if (!rule.days.includes(dayOfWeek)) continue;
+        
+        // Check time
+        if (hour < rule.startHour || hour >= rule.endHour) continue;
+        
+        // Check room (empty rooms array means all rooms)
+        if (rule.rooms && rule.rooms.length > 0 && !rule.rooms.includes(roomKey)) continue;
+        
+        matchedRule = rule;
+        break;
+      }
+      
+      if (!matchedRule) {
+        return { amount: 0, breakdown: 'No matching rule found' };
+      }
+      
+      const rate = config.rates[matchedRule.rate];
+      if (!rate) {
+        return { amount: 0, breakdown: `Rate ${matchedRule.rate} not found` };
+      }
+      
+      const roomsDesc = matchedRule.rooms && matchedRule.rooms.length > 0 
+        ? `(${matchedRule.rooms.length} rooms)` 
+        : '(all rooms)';
+      
+      return {
+        amount: rate.amount,
+        breakdown: `${rate.label} rate (${matchedRule.rate}) ${roomsDesc}`
+      };
+    }
+    
+    // Update calc room dropdown based on location
+    document.getElementById('calcLocation').addEventListener('change', function() {
+      const locId = this.value;
+      const roomSelect = document.getElementById('calcRoom');
+      const rooms = LOCATION_ROOMS[locId] || [];
+      
+      roomSelect.innerHTML = rooms.map(r => 
+        `<option value="${r.key}">${r.name}</option>`
+      ).join('');
+      
+      calculateTest();
+    });
+  </script>
+</body>
+</html>
